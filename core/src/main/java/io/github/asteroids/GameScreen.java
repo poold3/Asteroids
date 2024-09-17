@@ -5,10 +5,13 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Polygon;
+import com.badlogic.gdx.utils.FloatArray;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.asteroids.asteroid.BigAsteroid;
 import io.github.asteroids.asteroid.IAsteroid;
+import io.github.asteroids.ship.Bullet;
 import io.github.asteroids.ship.Ship;
 
 import java.util.ArrayList;
@@ -22,6 +25,9 @@ public class GameScreen implements Screen {
     static final float ASTEROID_SPAWN_TIME = 3f;
     static final int MAX_NUM_ASTEROIDS = 4;
     float asteroidTimer = 0f;
+
+    ArrayList<Bullet> bullets = new ArrayList<>();
+    static final int MAX_NUM_BULLETS = 4;
 
     public GameScreen(final Asteroids game) {
         this.game = game;
@@ -37,8 +43,16 @@ public class GameScreen implements Screen {
     }
 
     private void input() {
+        if (!this.ship.isAlive()) {
+            return;
+        }
+
         float delta = Gdx.graphics.getDeltaTime();
         float acceleration = Ship.ACCELERATION * delta;
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.X) && this.bullets.size() < MAX_NUM_BULLETS) {
+            this.bullets.add(new Bullet(this.ship));
+        }
 
         // Rotate ship
         if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
@@ -121,17 +135,56 @@ public class GameScreen implements Screen {
             this.ship.thrustersSprite.setRotation(this.ship.shipSprite.getRotation());
         }
 
+        FloatArray shipVertices = new FloatArray(this.ship.shipPolygon.getTransformedVertices());
+        for (int i = 0; i < this.asteroids.size(); ++i) {
+            IAsteroid asteroid = this.asteroids.get(i);
+            // Detect collisions with asteroids
+            float[] asteroidVertices = asteroid.asteroidPolygon.getTransformedVertices();
+            FloatArray asteroidVerticesFloatArray = new FloatArray(asteroidVertices);
+            if (this.ship.isAlive() && Intersector.intersectPolygonEdges(shipVertices, asteroidVerticesFloatArray)) {
+                this.explodeShip();
+                break;
+            }
+
+            // Detect collisions with bullets
+            boolean collisionWithBullet = false;
+            for (Bullet bullet : this.bullets) {
+                if (Intersector.isPointInPolygon(asteroidVertices, 0, asteroidVertices.length, bullet.circle.x, bullet.circle.y)) {
+                    this.bullets.remove(bullet);
+                    collisionWithBullet = true;
+                    break;
+                }
+            }
+            if (collisionWithBullet) {
+                this.asteroids.remove(i);
+                i -= 1;
+                continue;
+            }
+
+            // Move and teleport asteroids
+            asteroid.asteroidPolygon.translate(asteroid.dx, asteroid.dy);
+            this.teleport(asteroid.asteroidPolygon);
+        }
+
+        // Move/Remove bullets
+        for (int i = 0; i < this.bullets.size(); ++i) {
+            Bullet bullet = this.bullets.get(i);
+            float x = bullet.circle.x;
+            float y = bullet.circle.y;
+            if (x < 0f || x > this.game.viewport.getWorldWidth() || y < 0f || y > this.game.viewport.getWorldHeight()) {
+                this.bullets.remove(i);
+                i -= 1;
+                continue;
+            }
+            bullet.circle.x += bullet.dx;
+            bullet.circle.y += bullet.dy;
+        }
+
         // Spawn new big asteroid if enough time has passed and there are few enough asteroids
         this.asteroidTimer += Gdx.graphics.getDeltaTime();
         if (asteroidTimer > GameScreen.ASTEROID_SPAWN_TIME && this.asteroids.size() < GameScreen.MAX_NUM_ASTEROIDS) {
             this.asteroids.add(new BigAsteroid(this.game));
             this.asteroidTimer = 0f;
-        }
-
-        // Move and teleport asteroids
-        for (IAsteroid asteroid : this.asteroids) {
-            asteroid.asteroidPolygon.translate(asteroid.dx, asteroid.dy);
-            this.teleport(asteroid.asteroidPolygon);
         }
     }
 
@@ -139,7 +192,6 @@ public class GameScreen implements Screen {
         ScreenUtils.clear(Color.BLACK);
         this.game.viewport.apply();
         this.game.spriteBatch.setProjectionMatrix(this.game.viewport.getCamera().combined);
-
 
         this.shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 
@@ -152,15 +204,25 @@ public class GameScreen implements Screen {
         for (IAsteroid asteroid : this.asteroids) {
             this.shapeRenderer.polygon(asteroid.asteroidPolygon.getTransformedVertices());
         }
+        this.shapeRenderer.end();
+
+        this.shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        // Draw the bullets
+        for (Bullet bullet : this.bullets) {
+            this.shapeRenderer.circle(bullet.circle.x, bullet.circle.y, bullet.circle.radius);
+        }
 
         this.shapeRenderer.end();
 
         // Draw the sprites
         this.game.spriteBatch.begin();
 
-        this.ship.shipSprite.draw(this.game.spriteBatch);
-        if (this.ship.thrustersOn) {
-            this.ship.thrustersSprite.draw(this.game.spriteBatch);
+        if (this.ship.isAlive()) {
+            this.ship.shipSprite.draw(this.game.spriteBatch);
+            if (this.ship.thrustersOn) {
+                this.ship.thrustersSprite.draw(this.game.spriteBatch);
+            }
         }
 
         this.game.spriteBatch.end();
@@ -196,6 +258,22 @@ public class GameScreen implements Screen {
         return teleports;
     }
 
+    public void explodeShip() {
+        this.ship.health -= 1;
+        if (this.ship.isAlive()) {
+            this.asteroids.clear();
+            this.asteroidTimer = 0f;
+        }
+
+        this.ship.shipSprite.setCenter(this.game.viewport.getWorldWidth() / 2, this.game.viewport.getWorldHeight() / 2);
+        this.ship.shipSprite.setRotation(0f);
+        this.ship.dx = 0f;
+        this.ship.dy = 0f;
+        this.ship.thrustersOn = false;
+        this.ship.shipPolygon.setPosition(this.ship.shipSprite.getX(), this.ship.shipSprite.getY());
+        this.ship.shipPolygon.setRotation(0f);
+    }
+
     @Override
     public void resize(int width, int height) {
     }
@@ -210,6 +288,7 @@ public class GameScreen implements Screen {
 
     @Override
     public void pause() {
+
     }
 
     @Override

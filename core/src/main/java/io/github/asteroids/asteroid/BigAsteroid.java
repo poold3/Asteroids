@@ -6,7 +6,7 @@ import io.github.asteroids.Asteroids;
 public class BigAsteroid extends IAsteroid {
 
     public BigAsteroid(final Asteroids game) {
-        super(game, 95f, 94f);
+        super(game, 96f, 96f);
         this.vertices = new float[]{
             15f, 2f,
             1f, 41f,

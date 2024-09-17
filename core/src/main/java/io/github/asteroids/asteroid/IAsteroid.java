@@ -52,4 +52,19 @@ public abstract class IAsteroid {
             this.asteroidPolygon.setPosition(0f, this.rand.nextFloat(this.game.viewport.getWorldHeight()));
         }
     }
+
+    protected void createAsteroidPolygonAroundPoint(float x, float y) {
+        this.asteroidPolygon = new Polygon(this.vertices);
+        this.asteroidPolygon.setOrigin(this.width / 2f, this.height / 2f);
+
+        // Set asteroid rotation
+        this.asteroidPolygon.setRotation(this.rand.nextInt(360));
+
+        float randomX = this.rand.nextFloat(50f);
+        float randomY = this.rand.nextFloat(50f);
+        float newX = x + (randomX - 25f);
+        float newY = y + (randomY - 25f);
+
+        //this.asteroidPolygon.setPosition();
+    }
 }

@@ -18,10 +18,12 @@ public class Ship {
     public float dx = 0f;
     public float dy = 0f;
     public boolean thrustersOn;
+    public int health;
 
     public Ship(final Asteroids game) {
         this.game = game;
         this.thrustersOn = false;
+        this.health = 3;
 
         // Create our ship
         this.shipSprite = new Sprite(this.game.assetManager.get("ship.png", Texture.class));
@@ -47,5 +49,9 @@ public class Ship {
         this.shipPolygon = new Polygon(shipVertices);
         this.shipPolygon.setOrigin(this.shipSprite.getWidth() / 2f, this.shipSprite.getHeight() / 2f);
         this.shipPolygon.setPosition((this.game.viewport.getWorldWidth() / 2f) - (this.shipSprite.getWidth() / 2f), (this.game.viewport.getWorldHeight() / 2f) - (this.shipSprite.getHeight() / 2f));
+    }
+
+    public boolean isAlive() {
+        return this.health > 0;
     }
 }
