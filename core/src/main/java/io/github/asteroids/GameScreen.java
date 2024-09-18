@@ -3,6 +3,8 @@ package io.github.asteroids;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Intersector;
@@ -11,6 +13,8 @@ import com.badlogic.gdx.utils.FloatArray;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.asteroids.asteroid.BigAsteroid;
 import io.github.asteroids.asteroid.IAsteroid;
+import io.github.asteroids.asteroid.SmallAsteroid;
+import io.github.asteroids.asteroid.MediumAsteroid;
 import io.github.asteroids.ship.Bullet;
 import io.github.asteroids.ship.Ship;
 
@@ -23,16 +27,37 @@ public class GameScreen implements Screen {
 
     ArrayList<IAsteroid> asteroids = new ArrayList<>();
     static final float ASTEROID_SPAWN_TIME = 3f;
-    static final int MAX_NUM_ASTEROIDS = 4;
+    static final int MAX_NUM_ASTEROIDS = 10;
     float asteroidTimer = 0f;
 
     ArrayList<Bullet> bullets = new ArrayList<>();
     static final int MAX_NUM_BULLETS = 4;
 
+    Music background;
+    Music thrusters;
+    Sound blaster;
+    Sound explosion;
+    Sound gameOver;
+
+    int score = 0;
+
     public GameScreen(final Asteroids game) {
         this.game = game;
         this.shapeRenderer = new ShapeRenderer();
         this.ship = new Ship(game);
+
+        this.blaster = this.game.assetManager.get("blaster.mp3", Sound.class);
+        this.explosion = this.game.assetManager.get("explosion.mp3", Sound.class);
+        this.gameOver = this.game.assetManager.get("game-over.mp3", Sound.class);
+
+        this.thrusters = this.game.assetManager.get("thrusters.mp3", Music.class);
+        this.thrusters.setLooping(true);
+        this.thrusters.setVolume(.2f);
+
+        this.background = this.game.assetManager.get("background.mp3", Music.class);
+        this.background.setLooping(true);
+        this.background.setVolume(.2f);
+        this.background.play();
     }
 
     @Override
@@ -51,6 +76,7 @@ public class GameScreen implements Screen {
         float acceleration = Ship.ACCELERATION * delta;
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.X) && this.bullets.size() < MAX_NUM_BULLETS) {
+            this.blaster.play(.2f);
             this.bullets.add(new Bullet(this.ship));
         }
 
@@ -69,6 +95,10 @@ public class GameScreen implements Screen {
         float currentSpeed = (float) Math.sqrt(Math.pow(this.ship.dx, 2) + Math.pow(this.ship.dy, 2));
         if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
             this.ship.thrustersOn = true;
+            if (!this.thrusters.isPlaying()) {
+                this.thrusters.play();
+            }
+
             // Accelerate
             float angleRadians = (float) Math.toRadians(this.ship.shipSprite.getRotation() + 90f);
             float deltaX = acceleration * (float) Math.cos(angleRadians);
@@ -133,6 +163,8 @@ public class GameScreen implements Screen {
         if (this.ship.thrustersOn) {
             this.ship.thrustersSprite.setPosition(this.ship.shipSprite.getX(), this.ship.shipSprite.getY());
             this.ship.thrustersSprite.setRotation(this.ship.shipSprite.getRotation());
+        } else if (this.thrusters.isPlaying()) {
+            this.thrusters.pause();
         }
 
         FloatArray shipVertices = new FloatArray(this.ship.shipPolygon.getTransformedVertices());
@@ -156,6 +188,27 @@ public class GameScreen implements Screen {
                 }
             }
             if (collisionWithBullet) {
+                this.explosion.play(.2f);
+
+                // Spawn new asteroids
+                if (asteroid instanceof SmallAsteroid) {
+                    this.score += 15;
+                } else {
+                    float x = asteroid.asteroidPolygon.getX() + asteroid.asteroidPolygon.getOriginX();
+                    float y = asteroid.asteroidPolygon.getY() + asteroid.asteroidPolygon.getOriginY();
+                    if (asteroid instanceof BigAsteroid) {
+                        this.score += 5;
+                        for (int j = 0; j < 2; ++j) {
+                            this.asteroids.add(new MediumAsteroid(this.game, x, y));
+                        }
+                    } else if (asteroid instanceof MediumAsteroid) {
+                        this.score += 10;
+                        for (int j = 0; j < 3; ++j) {
+                            this.asteroids.add(new SmallAsteroid(this.game, x, y));
+                        }
+                    }
+                }
+
                 this.asteroids.remove(i);
                 i -= 1;
                 continue;
@@ -218,6 +271,10 @@ public class GameScreen implements Screen {
         // Draw the sprites
         this.game.spriteBatch.begin();
 
+        // Draw text
+        this.game.bitmapFont.draw(this.game.spriteBatch, "Score: " + this.score, 10f, 490f);
+        this.game.bitmapFont.draw(this.game.spriteBatch, "Lives: " + this.ship.health, 10f, 470f);
+
         if (this.ship.isAlive()) {
             this.ship.shipSprite.draw(this.game.spriteBatch);
             if (this.ship.thrustersOn) {
@@ -259,10 +316,14 @@ public class GameScreen implements Screen {
     }
 
     public void explodeShip() {
+        this.explosion.play(.2f);
         this.ship.health -= 1;
         if (this.ship.isAlive()) {
             this.asteroids.clear();
             this.asteroidTimer = 0f;
+        } else {
+            this.background.pause();
+            this.gameOver.play(1.5f);
         }
 
         this.ship.shipSprite.setCenter(this.game.viewport.getWorldWidth() / 2, this.game.viewport.getWorldHeight() / 2);
@@ -298,6 +359,11 @@ public class GameScreen implements Screen {
     @Override
     public void dispose() {
         this.shapeRenderer.dispose();
+        this.background.dispose();
+        this.thrusters.dispose();
+        this.blaster.dispose();
+        this.explosion.dispose();
+        this.gameOver.dispose();
     }
 
 }

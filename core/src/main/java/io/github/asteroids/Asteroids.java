@@ -2,6 +2,8 @@ package io.github.asteroids;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -25,6 +27,11 @@ public class Asteroids extends Game {
         // Load assets
         this.assetManager.load("ship.png", Texture.class);
         this.assetManager.load("ship-thrusters.png", Texture.class);
+        this.assetManager.load("background.mp3", Music.class);
+        this.assetManager.load("blaster.mp3", Sound.class);
+        this.assetManager.load("explosion.mp3", Sound.class);
+        this.assetManager.load("game-over.mp3", Sound.class);
+        this.assetManager.load("thrusters.mp3", Music.class);
         this.assetManager.finishLoading();
 
         // Set the game screen

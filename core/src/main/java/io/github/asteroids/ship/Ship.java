@@ -8,7 +8,7 @@ import io.github.asteroids.Asteroids;
 public class Ship {
     public static final float MAX_SHIP_SPEED = 7f;
     public static final float ACCELERATION = 4f;
-    public static final float ROTATION_SPEED = 200f;
+    public static final float ROTATION_SPEED = 300f;
     public static final float DECELERATION = 0.04f;
 
     final Asteroids game;

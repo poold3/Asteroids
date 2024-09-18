@@ -6,7 +6,7 @@ import io.github.asteroids.Asteroids;
 import java.util.Random;
 
 public abstract class IAsteroid {
-    public static final float MAX_ASTEROID_SPEED = 1f;
+    public static final float MAX_ASTEROID_SPEED = 2f;
 
     public final Asteroids game;
     public float[] vertices;
@@ -62,9 +62,9 @@ public abstract class IAsteroid {
 
         float randomX = this.rand.nextFloat(50f);
         float randomY = this.rand.nextFloat(50f);
-        float newX = x + (randomX - 25f);
-        float newY = y + (randomY - 25f);
+        float newX = x + (randomX - 25f) - this.asteroidPolygon.getOriginX();
+        float newY = y + (randomY - 25f) - this.asteroidPolygon.getOriginY();
 
-        //this.asteroidPolygon.setPosition();
+        this.asteroidPolygon.setPosition(newX, newY);
     }
 }

@@ -4,22 +4,23 @@ import io.github.asteroids.Asteroids;
 
 public class MediumAsteroid extends IAsteroid {
 
-    public MediumAsteroid(final Asteroids game, BigAsteroid bigAsteroid) {
+    public MediumAsteroid(final Asteroids game, float x, float y) {
         super(game, 64f, 64f);
         this.vertices = new float[]{
-            4f, 2f,
-            29f, 10f,
-            59f, 6f,
-            62f, 36f,
-            51f, 31f,
-            58f, 58f,
-            42f, 62f,
-            36f, 56f,
-            18f, 48f,
-            1f, 62f,
-            0f, 48f,
-            18f, 30f
+            3f, 2f,
+            32f, 11f,
+            60f, 4f,
+            63f, 15f,
+            56f, 34f,
+            61f, 51f,
+            53f, 61f,
+            36f, 55f,
+            15f, 59f,
+            4f, 56f,
+            10f, 43f,
+            3f, 30f,
+            12f, 15f
         };
-        //this.createAsteroidPolygonAroundPoint();
+        this.createAsteroidPolygonAroundPoint(x, y);
     }
 }
