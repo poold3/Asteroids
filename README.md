@@ -1,5 +1,8 @@
 # Asteroids
 
+This project is my first dive into 2D game development using a framework.
+I'm using libGDX to recreate the arcade Asteroids game.
+
 A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
 
 This project was generated with a template including simple application launchers and an `ApplicationAdapter` extension that draws libGDX logo.
